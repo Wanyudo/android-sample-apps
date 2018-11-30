@@ -16,7 +16,8 @@ import com.ooyala.android.EmbedTokenGenerator;
 import com.ooyala.android.EmbedTokenGeneratorCallback;
 import com.ooyala.android.EmbeddedSecureURLGenerator;
 import com.ooyala.android.offline.DashDownloader;
-import com.ooyala.android.offline.DashOptions;
+import com.ooyala.android.offline.DownloadOptions;
+import com.ooyala.android.offline.OoyalaDownloader;
 import com.ooyala.android.util.DebugMode;
 import com.ooyala.android.util.SDCardLogcatOoyalaEventsLogger;
 import com.ooyala.sample.R;
@@ -29,7 +30,7 @@ import java.util.List;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
-public class OfflineDownloadActivity extends Activity implements DashDownloader.Listener, EmbedTokenGenerator {
+public class OfflineDownloadActivity extends Activity implements EmbedTokenGenerator, OoyalaDownloader.LegacyListener {
   final String TAG = this.getClass().toString();
 
   private static final int PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 1;
@@ -43,7 +44,7 @@ public class OfflineDownloadActivity extends Activity implements DashDownloader.
 
   protected TextView progressView;
   protected Handler handler;
-  protected DashDownloader downloader;
+  protected OoyalaDownloader downloader;
   protected int progressCompleted;
   private final int MAX_RETRY_COUNT = 3;
   private int retry_count;
@@ -74,11 +75,9 @@ public class OfflineDownloadActivity extends Activity implements DashDownloader.
 
     final File folder = android.os.Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES);
 
-    // Use this DashOptions to download an asset without OPT
-//    DashOptions options = new DashOptions.Builder(PCODE, EMBED, DOMAIN, folder).build();
-    // Use this DashOptions to download an asset with OPT
-    DashOptions options = new DashOptions.Builder(PCODE, EMBED, DOMAIN, folder).setEmbedTokenGenerator(this).build();
-    downloader = new DashDownloader(this, options, this);
+
+    DownloadOptions options = new DownloadOptions.Builder(PCODE, EMBED, DOMAIN, folder).setEmbedTokenGenerator(this).build();
+    downloader = OoyalaDownloader.getInstance(this, options, this);
 
     Button startButton = (Button)findViewById(R.id.start_button);
     startButton.setOnClickListener(new View.OnClickListener() {
@@ -117,7 +116,7 @@ public class OfflineDownloadActivity extends Activity implements DashDownloader.
       @Override
       public void run() {
         long expiration = downloader.getLicenseExpirationDate();
-        String expirationString = expiration == DashDownloader.INFINITE_DURATION ? "infinite" : String.valueOf(expiration);
+        String expirationString = expiration == OoyalaDownloader.INFINITE_DURATION ? "infinite" : String.valueOf(expiration);
         progressView.setText("Completed! license expires in " + expirationString);
       }
     });
@@ -204,7 +203,7 @@ public class OfflineDownloadActivity extends Activity implements DashDownloader.
     /* Uncommenting this will bypass all syndication rules on your asset
        This will not work unless you have a working API Key and Secret.
        This is one reason why you shouldn't keep the Secret in your app/source control */
-//     params.put("override_syndication_group", "override_all_synd_groups");
+    //params.put("override_syndication_group", "override_all_synd_groups");
 
     String uri = "/sas/embed_token/" + PCODE + "/" + embedCodesString;
 
